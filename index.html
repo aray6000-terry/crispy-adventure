@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="專業工程設備單價查詢系統 - Google 試算表即時連線、多分類檢索、型錄下載與估價詢價單管理">
+  <title>設備單價查詢系統 | Equipment Price Explorer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+
+<body>
+
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <div class="app-container">
+
+    <!-- ========================================== -->
+    <!-- 1. 訪客 / 登入與註冊視圖 (Auth View)         -->
+    <!-- ========================================== -->
+    <div id="app-auth-view" style="display: none;">
+      <div class="auth-container">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div class="logo-icon" style="margin: 0 auto 12px auto; width: 56px; height: 56px; font-size: 28px;">⚡</div>
+          <h2 class="gradient-text" style="font-size: 1.6rem;">設備單價查詢系統</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">請先驗證帳號權限以進入查詢資料庫</p>
+        </div>
+
+        <div class="auth-tabs">
+          <div class="auth-tab active" data-tab="login" onclick="App.switchAuthTab('login')">帳號登入</div>
+          <div class="auth-tab" data-tab="register" onclick="App.switchAuthTab('register')">註冊審核申請</div>
+        </div>
+
+        <!-- 登入表單 -->
+        <div id="login-form-container">
+          <form onsubmit="App.handleLogin(event)">
+            <div class="form-group">
+              <label class="form-label" for="login-username">帳號 (Username)</label>
+              <div class="input-wrapper">
+                <span class="input-icon">👤</span>
+                <input type="text" id="login-username" class="form-control" placeholder="請輸入您的帳號" required
+                  autocomplete="username">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="login-password">密碼 (Password)</label>
+              <div class="input-wrapper">
+                <span class="input-icon">🔒</span>
+                <input type="password" id="login-password" class="form-control" placeholder="請輸入密碼" required
+                  autocomplete="current-password">
+              </div>
+            </div>
+
+            <button type="submit" id="login-submit-btn" class="btn btn-primary"
+              style="width: 100%; padding: 12px; margin-top: 8px;">
+              登入系統
+            </button>
+          </form>
+
+          <!-- 快速測試帳號 -->
+          <div class="quick-logins">
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-bottom: 4px;">🧪 點擊快速帶入測試帳號（各角色權限）：</div>
+            <div class="quick-login-btn" onclick="App.fillQuickLogin('admin', 'admin123')">
+              <span>👑 <strong>admin</strong> (系統管理員 - 業務價+採購價雙看)</span>
+              <span style="color: var(--accent-amber);">帶入 ➔</span>
+            </div>
+            <div class="quick-login-btn" onclick="App.fillQuickLogin('sales01', '123456')">
+              <span>💼 <strong>sales01</strong> (業務人員 - 僅看業務售價，成本保密)</span>
+              <span style="color: var(--accent-emerald);">帶入 ➔</span>
+            </div>
+            <div class="quick-login-btn" onclick="App.fillQuickLogin('buyer01', '123456')">
+              <span>🛒 <strong>buyer01</strong> (採購人員 - 僅看採購成本進價)</span>
+              <span style="color: var(--secondary);">帶入 ➔</span>
+            </div>
+            <div class="quick-login-btn" onclick="App.fillQuickLogin('guest', '123456')">
+              <span>⏳ <strong>guest</strong> (待審核帳號 - 測試未審核阻擋)</span>
+              <span style="color: var(--text-dim);">帶入 ➔</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 註冊表單 -->
+        <div id="register-form-container" style="display: none;">
+          <form onsubmit="App.handleRegister(event)">
+            <div class="form-group">
+              <label class="form-label" for="reg-name">真實姓名 / 部門單位</label>
+              <div class="input-wrapper">
+                <span class="input-icon">🏷️</span>
+                <input type="text" id="reg-name" class="form-control" placeholder="例：採購部-王小明 或 業務部-李專員" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reg-role">申請角色權限</label>
+              <div class="input-wrapper">
+                <span class="input-icon">👔</span>
+                <select id="reg-role" class="form-control" required>
+                  <option value="sales">💼 業務人員 (僅查詢業務售價/報價)</option>
+                  <option value="procurement">🛒 採購人員 (僅查詢採購進價/成本)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reg-username">設定帳號 (Username)</label>
+              <div class="input-wrapper">
+                <span class="input-icon">👤</span>
+                <input type="text" id="reg-username" class="form-control" placeholder="建議使用英文或員工編號" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reg-password">設定密碼 (Password)</label>
+              <div class="input-wrapper">
+                <span class="input-icon">🔒</span>
+                <input type="password" id="reg-password" class="form-control" placeholder="設定登入密碼" required>
+              </div>
+            </div>
+
+            <p style="font-size: 0.78rem; color: var(--text-dim); margin-bottom: 16px;">
+              💡 註冊送出後，系統將自動寫入 Google Sheet 審核清單，需由管理員在後台核准為「已啟用」後方可登入。
+            </p>
+
+            <button type="submit" id="reg-submit-btn" class="btn btn-primary" style="width: 100%; padding: 12px;">
+              送出註冊審核申請
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- 2. 主系統查詢視圖 (Main App View)           -->
+    <!-- ========================================== -->
+    <div id="app-main-view" style="display: none;">
+
+      <!-- 頂部導覽列 -->
+      <header class="app-header">
+        <div class="logo-group">
+          <div class="logo-icon">⚡</div>
+          <div class="logo-title">
+            <h1 class="gradient-text">設備單價查詢系統</h1>
+            <p>CAMTI_設備單價查詢 • Google 試算表即時連線</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- 詢價清單按鈕 -->
+          <button class="btn btn-secondary" onclick="App.openCartModal()" title="查看詢價清單">
+            🛒 詢價單 <span id="cart-badge-count"
+              style="display: none; background: var(--accent-rose); color: #fff; padding: 2px 7px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; margin-left: 4px;">0</span>
+          </button>
+
+          <!-- 管理者專屬按鈕 -->
+          <button id="admin-panel-btn" class="btn btn-secondary" style="display: none;" onclick="App.openAdminModal()">
+            ⚙️ 後台審核
+          </button>
+
+          <!-- 深淺色切換 -->
+          <button id="theme-toggle-btn" class="btn btn-icon" onclick="App.toggleTheme()" title="切換主題">
+            ☀️ 淺色
+          </button>
+
+          <!-- 用戶資訊 -->
+          <div class="user-badge">
+            <div class="user-avatar">👤</div>
+            <div class="user-info-text">
+              <span id="header-user-name" class="user-name">訪客</span>
+              <span id="header-user-role" class="user-role">用戶</span>
+            </div>
+          </div>
+
+          <!-- 登出按鈕 -->
+          <button class="btn btn-secondary btn-sm" onclick="Auth.logout()" title="登出系統">
+            🚪 登出
+          </button>
+        </div>
+      </header>
+
+      <!-- 模式提示橫幅 (當未串接 GAS 時顯示) -->
+      <div id="demo-mode-banner"
+        style="display: none; background: linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(14, 165, 233, 0.15) 100%); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 20px; align-items: center; justify-content: space-between; font-size: 0.85rem;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">✨</span>
+          <span><strong>本地體驗模式中</strong>：目前展示 10 大類別範例資料。若要連接您的 Google Sheet，請參考 <code
+              style="background: var(--bg-input); padding: 2px 6px; border-radius: 4px;">README.md</code> 將 GAS 部署網址填入
+            <code style="background: var(--bg-input); padding: 2px 6px; border-radius: 4px;">js/config.js</code>。</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="App.loadData()">🔄 重新整理資料</button>
+      </div>
+
+      <!-- 快速統計列 -->
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-icon-wrapper stat-blue">📁</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-cat-count">10</div>
+            <div class="stat-label">設備分類分頁</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrapper stat-indigo">📦</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-item-count">0</div>
+            <div class="stat-label">已收錄設備品項</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrapper stat-emerald">🏢</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-brand-count">0</div>
+            <div class="stat-label">合作與收錄廠牌</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrapper stat-amber">⏱️</div>
+          <div class="stat-info">
+            <div class="stat-value" id="stat-sync-time">--:--</div>
+            <div class="stat-label">最後資料同步時間</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工具列與篩選搜尋 -->
+      <section class="toolbar-section">
+        <!-- 10 大類別分頁切換 Tabs -->
+        <div class="category-tabs-wrapper">
+          <div id="category-tabs" class="category-tabs">
+            <!-- 動態生成分類按鈕 -->
+          </div>
+        </div>
+
+        <!-- 篩選控制列 -->
+        <div class="filter-controls">
+          <!-- 關鍵字搜尋 -->
+          <div class="input-wrapper">
+            <span class="input-icon">🔍</span>
+            <input type="text" id="search-input" class="form-control" placeholder="搜尋設備名稱、廠牌、型號、備註規格...">
+            <button id="clear-search-btn" class="clear-input-btn" title="清除搜尋">✕</button>
+          </div>
+
+          <!-- 廠牌篩選 -->
+          <div class="input-wrapper">
+            <span class="input-icon">🏢</span>
+            <select id="brand-filter-select" class="form-control">
+              <option value="ALL">全部廠牌</option>
+            </select>
+          </div>
+
+          <!-- 排序選項 -->
+          <div class="input-wrapper">
+            <span class="input-icon">↕️</span>
+            <select id="sort-select" class="form-control">
+              <option value="name_asc">依品名 (A-Z)</option>
+              <option value="price_asc">金額：由低至高</option>
+              <option value="price_desc">金額：由高至低</option>
+              <option value="brand_asc">依廠牌名稱</option>
+            </select>
+          </div>
+
+          <!-- 卡片 / 表格視圖切換 -->
+          <div class="view-toggle-group">
+            <button class="view-btn active" data-mode="grid" onclick="App.setViewMode('grid')" title="卡片視圖">
+              ▦ 卡片
+            </button>
+            <button class="view-btn" data-mode="table" onclick="App.setViewMode('table')" title="表格視圖">
+              ☷ 表格
+            </button>
+          </div>
+
+          <!-- 重新整理按鈕 -->
+          <button class="btn btn-secondary" onclick="App.loadData()" title="重新從 Google Sheet 載入最新資料">
+            🔄 同步
+          </button>
+        </div>
+      </section>
+
+      <!-- 查詢結果統計與重設 -->
+      <div class="results-header">
+        <div id="results-count-display" class="results-count">載入資料中...</div>
+        <button class="btn btn-secondary btn-sm" onclick="App.resetFilters()">清空條件</button>
+      </div>
+
+      <!-- 載入中 Spinner -->
+      <div id="data-loading-spinner" class="loader-container">
+        <div class="spinner"></div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">正在同步 Google 試算表資料庫...</p>
+      </div>
+
+      <!-- 設備資料卡片/表格容器 -->
+      <main id="items-display-container">
+        <!-- 資料將由 JS 動態渲染 -->
+      </main>
+
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- 3. 詢價單 / 估價清單彈窗 (Cart Modal)       -->
+  <!-- ========================================== -->
+  <div id="cart-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px;">
+          <span>🛒</span> 設備詢價與估價清單 (<span id="cart-item-count">0</span>)
+        </h3>
+        <button class="btn btn-icon btn-sm" onclick="Cart.clear()" title="清空全部">🗑️</button>
+      </div>
+
+      <div class="modal-body" id="cart-items-list" style="max-height: 50vh;">
+        <!-- 動態渲染清單內容 -->
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.8rem; color: var(--text-dim);">預估合計總金額</div>
+          <div id="cart-total-amount"
+            style="font-size: 1.4rem; font-weight: 800; color: var(--accent-emerald); font-family: monospace;">
+            NT$ 0
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onclick="App.closeCartModal()">關閉</button>
+          <button class="btn btn-secondary" onclick="Cart.printQuotation()">🖨️ 列印報價</button>
+          <button class="btn btn-primary" onclick="Cart.exportToCsv()">📥 匯出 Excel (CSV)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- 4. 後台管理彈窗 (Admin Management Modal)     -->
+  <!-- ========================================== -->
+  <div id="admin-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 780px;">
+      <div class="modal-header">
+        <h3 style="display: flex; align-items: center; gap: 8px;">
+          <span>⚙️</span> 系統後台管理 (權限審核與登入紀錄)
+        </h3>
+        <button class="btn btn-icon btn-sm" onclick="App.closeAdminModal()">✕</button>
+      </div>
+
+      <div class="modal-body" style="max-height: 65vh;">
+        <h4 style="margin-bottom: 12px; font-size: 1rem; color: var(--primary-light);">👥 帳號名單與權限審核 (對應 Google Sheet:
+          _用戶權限)</h4>
+        <div id="admin-users-list" class="table-responsive" style="margin-bottom: 24px;"></div>
+
+        <h4 style="margin-bottom: 12px; font-size: 1rem; color: var(--secondary);">📋 最近帳戶登入紀錄 (對應 Google Sheet: _登入紀錄)
+        </h4>
+        <div id="admin-logs-list" class="table-responsive"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="App.closeAdminModal()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- JavaScript 模組引入 -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+
+</html>
