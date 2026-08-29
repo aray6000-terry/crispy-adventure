@@ -326,9 +326,6 @@ const App = {
 
             <div class="card-actions">
               ${catalogBtn}
-              <button class="btn btn-primary btn-sm" onclick='Cart.addItem(${JSON.stringify(item)})' title="加入清單">
-                + 加入
-              </button>
             </div>
           </div>
         </div>
@@ -371,7 +368,6 @@ const App = {
               ${priceTh}
               <th>備註說明</th>
               <th>型錄</th>
-              <th style="text-align: center;">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -412,11 +408,6 @@ const App = {
           ${priceTd}
           <td style="color: var(--text-muted); font-size: 0.85rem; max-width: 200px;">${this.highlightText(item.note || '-', q)}</td>
           <td>${catalogBtn}</td>
-          <td style="text-align: center;">
-            <button class="btn btn-primary btn-sm" onclick='Cart.addItem(${JSON.stringify(item)})'>
-              + 加入
-            </button>
-          </td>
         </tr>
       `;
     });
@@ -616,15 +607,6 @@ const App = {
     this.switchAuthTab('login');
     document.getElementById('login-username').value = username;
     document.getElementById('login-password').value = password;
-  },
-
-  openCartModal() {
-    Cart.renderDrawer();
-    document.getElementById('cart-modal').classList.add('active');
-  },
-
-  closeCartModal() {
-    document.getElementById('cart-modal').classList.remove('active');
   },
 
   async openAdminModal() {
