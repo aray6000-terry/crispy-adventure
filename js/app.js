@@ -23,7 +23,6 @@ const App = {
    */
   async init() {
     this.initTheme();
-    Cart.init();
 
     if (!Auth.isLoggedIn()) {
       this.renderAuthView();
