@@ -153,7 +153,7 @@ function setupDatabase() {
     if (!sheet) {
       sheet = ss.insertSheet(cat.name);
       sheet.getRange(1, 1, 1, 7).setValues([[
-        '項目', '廠牌', '型號', '採購價 (進貨/成本)', '業務價 (報價/售價)', '備註', '型錄(下載連結)'
+        '項目', '廠牌', '型號', '採購成本', '業務成本', '備註', '型錄(下載連結)'
       ]]);
       sheet.getRange(1, 1, 1, 7).setBackground('#0284c7').setFontColor('#ffffff').setFontWeight('bold');
       
@@ -174,7 +174,7 @@ function setupDatabase() {
  * 💡 智慧無痛升級函式 (smartMigrateDatabase)
  * 如果您手動打了很多資料，只需執行此函式：
  * 1. 100% 完整保留您在 Google Sheet 裡輸入的每一筆設備資料。
- * 2. 自動檢查各分頁第 1 列標題，補齊「採購價」與「業務價」標準格式。
+ * 2. 自動檢查各分頁第 1 列標題，補齊「採購成本」與「業務成本」標準格式。
  */
 function smartMigrateDatabase() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -194,7 +194,7 @@ function smartMigrateDatabase() {
     // 若原分頁只有 6 欄且只有單一金額欄位，安全自動擴充第 1 列標題
     if (colMap.costPrice === -1 || colMap.salesPrice === -1) {
       sheet.getRange(1, 1, 1, 7).setValues([[
-        '項目', '廠牌', '型號', '採購價 (進貨/成本)', '業務價 (報價/售價)', '備註', '型錄(下載連結)'
+        '項目', '廠牌', '型號', '採購成本', '業務成本', '備註', '型錄(下載連結)'
       ]]);
       sheet.getRange(1, 1, 1, 7).setBackground('#0284c7').setFontColor('#ffffff').setFontWeight('bold');
     }
@@ -555,13 +555,13 @@ function getHeaderMapping(headers) {
     const title = String(h || '').trim().toLowerCase();
     if (!title) return;
 
-    // 1. 採購價 / 底價 / 進貨成本 (優先比對)
-    if (title.includes('採購') || title.includes('成本') || title.includes('進價') || title.includes('進貨') || title.includes('底價') || title.includes('cost') || title.includes('buy') || title.includes('purchase')) {
-      map.costPrice = idx;
-    }
-    // 2. 業務價 / 報價 / 建議售價 / 牌價
-    else if (title.includes('業務') || title.includes('報價') || title.includes('售價') || title.includes('定價') || title.includes('牌價') || title.includes('建議') || title.includes('sales') || title.includes('quote') || title.includes('sell')) {
+    // 1. 業務成本 / 業務價 / 報價 / 售價 / 建議售價 (若包含「業務」優先判定為業務成本)
+    if (title.includes('業務') || title.includes('報價') || title.includes('售價') || title.includes('定價') || title.includes('牌價') || title.includes('建議') || title.includes('sales') || title.includes('quote') || title.includes('sell')) {
       map.salesPrice = idx;
+    }
+    // 2. 採購成本 / 採購價 / 進價 / 進貨 / 底價 / 成本
+    else if (title.includes('採購') || title.includes('成本') || title.includes('進價') || title.includes('進貨') || title.includes('底價') || title.includes('cost') || title.includes('buy') || title.includes('purchase')) {
+      map.costPrice = idx;
     }
     // 3. 通用單一金額欄位 (備援)
     else if (title.includes('金額') || title.includes('單價') || title.includes('price')) {

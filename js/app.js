@@ -269,11 +269,11 @@ const App = {
           <div class="price-display">
             <div style="display: flex; gap: 12px; align-items: baseline;">
               <div>
-                <span class="price-label" style="color: var(--accent-emerald);">業務報價</span>
+                <span class="price-label" style="color: var(--accent-emerald);">業務成本</span>
                 <div class="price-value" style="font-size: 1.15rem; color: var(--accent-emerald);">NT$ ${sales.toLocaleString()}</div>
               </div>
               <div>
-                <span class="price-label" style="color: var(--secondary);">採購底價</span>
+                <span class="price-label" style="color: var(--secondary);">採購成本</span>
                 <div class="price-value" style="font-size: 1.15rem; color: var(--secondary);">NT$ ${cost.toLocaleString()}</div>
               </div>
             </div>
@@ -286,7 +286,7 @@ const App = {
         const cost = item.costPrice || item.price || 0;
         priceHtml = `
           <div class="price-display">
-            <span class="price-label" style="color: var(--secondary);">採購進貨單價</span>
+            <span class="price-label" style="color: var(--secondary);">採購成本</span>
             <span class="price-value" style="color: var(--secondary);">NT$ ${cost.toLocaleString()}</span>
           </div>
         `;
@@ -295,7 +295,7 @@ const App = {
         const sales = item.salesPrice || item.price || 0;
         priceHtml = `
           <div class="price-display">
-            <span class="price-label" style="color: var(--accent-emerald);">業務建議售價</span>
+            <span class="price-label" style="color: var(--accent-emerald);">業務成本</span>
             <span class="price-value" style="color: var(--accent-emerald);">NT$ ${sales.toLocaleString()}</span>
           </div>
         `;
@@ -345,14 +345,14 @@ const App = {
     let priceTh = '';
     if (role === 'admin') {
       priceTh = `
-        <th style="color: var(--secondary);">採購底價 (NT$)</th>
-        <th style="color: var(--accent-emerald);">業務售價 (NT$)</th>
+        <th style="color: var(--secondary);">採購成本 (NT$)</th>
+        <th style="color: var(--accent-emerald);">業務成本 (NT$)</th>
         <th style="color: var(--accent-amber);">毛利 (率)</th>
       `;
     } else if (role === 'procurement') {
-      priceTh = `<th style="color: var(--secondary);">採購單價 (NT$)</th>`;
+      priceTh = `<th style="color: var(--secondary);">採購成本 (NT$)</th>`;
     } else {
-      priceTh = `<th style="color: var(--accent-emerald);">業務單價 (NT$)</th>`;
+      priceTh = `<th style="color: var(--accent-emerald);">業務成本 (NT$)</th>`;
     }
 
     let html = `
@@ -650,9 +650,9 @@ const App = {
 
         const roleSelector = `
           <select style="background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px; font-size: 0.8rem;" onchange="App.changeUserRole('${u.username}', '${u.status}', this.value)">
-            <option value="sales" ${u.role === 'sales' ? 'selected' : ''}>💼 業務 (業務價)</option>
-            <option value="procurement" ${u.role === 'procurement' ? 'selected' : ''}>🛒 採購 (採購價)</option>
-            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>👑 管理者 (雙價)</option>
+            <option value="sales" ${u.role === 'sales' ? 'selected' : ''}>💼 業務 (業務成本)</option>
+            <option value="procurement" ${u.role === 'procurement' ? 'selected' : ''}>🛒 採購 (採購成本)</option>
+            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>👑 管理者 (雙成本)</option>
           </select>
         `;
 
