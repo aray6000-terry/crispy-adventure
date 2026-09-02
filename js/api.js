@@ -8,10 +8,25 @@
 
 const API = {
   /**
-   * 檢查是否已配置 Google Apps Script 部署網址
+   * 檢查是否已配置 Google Apps Script 部署網址 (若啟用強制離線模式則視為未配置)
    */
   isConfigured() {
+    if (this.isOfflineMode()) {
+      return false;
+    }
     return Boolean(CONFIG.GAS_API_URL && CONFIG.GAS_API_URL.trim().startsWith('http'));
+  },
+
+  isOfflineMode() {
+    return localStorage.getItem('EQUIP_PRICE_OFFLINE_MODE') === 'true';
+  },
+
+  setOfflineMode(enabled) {
+    if (enabled) {
+      localStorage.setItem('EQUIP_PRICE_OFFLINE_MODE', 'true');
+    } else {
+      localStorage.removeItem('EQUIP_PRICE_OFFLINE_MODE');
+    }
   },
 
   /**
@@ -60,7 +75,21 @@ const API = {
           })
         });
         const result = await response.json();
-        return result;
+        if (result) {
+          if (!result.message && result.error) {
+            result.message = result.error;
+          }
+          if (!result.success) {
+            const errStr = String(result.message || '');
+            if (errStr.includes('找不到使用者資料表') || errStr.includes('未知的 POST action') || errStr.includes('16 家公司')) {
+              result.message = '【後端版本不符】目前的 Google Apps Script 部署網址指向了其他專案（設備數量統計系統）。請重新部署本專案 Code.gs，或切換為「離線示範模式」進行測試。';
+              result.isBackendMismatch = true;
+            } else if (errStr.includes('系統權限表尚未初始化')) {
+              result.message = '【尚未初始化】Google 試算表尚未建立權限表，請至 Apps Script 執行 setupDatabase()。';
+            }
+          }
+          return result;
+        }
       } catch (err) {
         console.error('GAS API 連線失敗，切換至本地模擬驗證:', err);
       }
@@ -121,7 +150,9 @@ const API = {
             role: role
           })
         });
-        return await response.json();
+        const result = await response.json();
+        if (result && !result.message && result.error) result.message = result.error;
+        return result;
       } catch (err) {
         console.error('GAS 註冊失敗:', err);
       }
@@ -255,7 +286,9 @@ const API = {
             newRole: newRole
           })
         });
-        return await response.json();
+        const result = await response.json();
+        if (result && !result.message && result.error) result.message = result.error;
+        return result;
       } catch (err) {
         console.error('更新狀態失敗:', err);
       }

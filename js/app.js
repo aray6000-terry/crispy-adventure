@@ -501,6 +501,37 @@ const App = {
   renderAuthView() {
     document.getElementById('app-main-view').style.display = 'none';
     document.getElementById('app-auth-view').style.display = 'block';
+    this.updateOfflineIndicator();
+  },
+
+  toggleOfflineMode() {
+    const isOffline = API.isOfflineMode();
+    API.setOfflineMode(!isOffline);
+    this.updateOfflineIndicator();
+    if (!isOffline) {
+      this.showToast('已切換為【離線示範模式】，可直接點選測試帳號登入！', 'success');
+      const banner = document.getElementById('login-warning-banner');
+      if (banner) banner.style.display = 'none';
+    } else {
+      this.showToast('已切換為【Google Apps Script 雲端連線模式】', 'info');
+    }
+  },
+
+  updateOfflineIndicator() {
+    const el = document.getElementById('offline-mode-indicator');
+    if (el) {
+      const isOffline = API.isOfflineMode();
+      el.textContent = isOffline ? '🟡 目前狀態：本地離線模式 (點擊切換)' : (API.isConfigured() ? '🟢 目前狀態：雲端 GAS 模式 (點擊切換)' : '🟡 目前狀態：本地示範模式');
+      el.style.color = isOffline ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+    }
+  },
+
+  fillDemoLogin(username, password) {
+    const u = document.getElementById('login-username');
+    const p = document.getElementById('login-password');
+    if (u) u.value = username;
+    if (p) p.value = password;
+    this.showToast(`已填入帳號：${username}`, 'info');
   },
 
   renderMainView() {
@@ -552,7 +583,12 @@ const App = {
         this.renderMainView();
         await this.loadData();
       } else {
-        this.showToast(res.message, 'error');
+        const errorMsg = res.message || res.error || '帳號或密碼錯誤，請重新確認';
+        this.showToast(errorMsg, 'error');
+        if (res.isBackendMismatch) {
+          const banner = document.getElementById('login-warning-banner');
+          if (banner) banner.style.display = 'block';
+        }
       }
     } catch (err) {
       this.showToast('登入時發生錯誤', 'error');
