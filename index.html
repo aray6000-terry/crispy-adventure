@@ -62,26 +62,6 @@
               登入系統
             </button>
           </form>
-
-          <!-- 快速測試帳號與模式切換工具 -->
-          <div class="demo-accounts-hint"
-            style="margin-top: 18px; padding: 14px; background: rgba(255,255,255,0.03); border: 1px dashed var(--border-color); border-radius: 10px;">
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <span>⚡ 快速填入測試帳密：</span>
-              <button type="button" class="btn btn-sm btn-ghost" style="padding: 2px 8px; font-size: 0.72rem; cursor: pointer;" onclick="App.toggleOfflineMode()" title="點擊可在 Google Apps Script 雲端模式與本地離線模式之間切換">
-                <span id="offline-mode-indicator">🟢 雲端 GAS 模式</span>
-              </button>
-            </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" class="btn btn-sm btn-secondary" onclick="App.fillDemoLogin('admin', 'admin123')">👑 管理員</button>
-              <button type="button" class="btn btn-sm btn-secondary" onclick="App.fillDemoLogin('sales01', '123456')">💼 業務員</button>
-              <button type="button" class="btn btn-sm btn-secondary" onclick="App.fillDemoLogin('buyer01', '123456')">🛒 採購員</button>
-            </div>
-            <div id="login-warning-banner"
-              style="display: none; margin-top: 10px; padding: 8px 10px; background: rgba(239,68,68,0.15); border-left: 3px solid var(--accent-rose); border-radius: 4px; font-size: 0.78rem; color: #fca5a5; line-height: 1.4;">
-              ⚠️ <strong>後端警告</strong>：目前的 Google Apps Script 網址並非本專案後端。若想立即進入系統，可點擊上方按鈕切換為「<strong>本地離線模式</strong>」即可直接登入！
-            </div>
-          </div>
         </div>
 
         <!-- 註冊表單 -->
