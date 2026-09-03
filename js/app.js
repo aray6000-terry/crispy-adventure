@@ -501,6 +501,21 @@ const App = {
   renderAuthView() {
     document.getElementById('app-main-view').style.display = 'none';
     document.getElementById('app-auth-view').style.display = 'block';
+
+    const clearInputs = () => {
+      const form = document.getElementById('login-form');
+      if (form) form.reset();
+      const u = document.getElementById('login-username');
+      const p = document.getElementById('login-password');
+      if (u) u.value = '';
+      if (p) p.value = '';
+    };
+
+    clearInputs();
+    // 延遲再次清空以阻絕瀏覽器非同步之自動填充 (Autofill)
+    setTimeout(clearInputs, 50);
+    setTimeout(clearInputs, 300);
+
     this.updateOfflineIndicator();
   },
 
@@ -636,12 +651,12 @@ const App = {
     });
     document.getElementById('login-form-container').style.display = tab === 'login' ? 'block' : 'none';
     document.getElementById('register-form-container').style.display = tab === 'register' ? 'block' : 'none';
-  },
-
-  fillQuickLogin(username, password) {
-    this.switchAuthTab('login');
-    document.getElementById('login-username').value = username;
-    document.getElementById('login-password').value = password;
+    if (tab === 'login') {
+      const u = document.getElementById('login-username');
+      const p = document.getElementById('login-password');
+      if (u) u.value = '';
+      if (p) p.value = '';
+    }
   },
 
   async openAdminModal() {
