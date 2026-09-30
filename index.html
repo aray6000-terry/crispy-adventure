@@ -126,7 +126,7 @@
           <div class="logo-icon">⚡</div>
           <div class="logo-title">
             <h1 class="gradient-text">設備單價查詢系統</h1>
-            <p>CAMTI_設備單價查詢 • Google 試算表即時連線</p>
+            <p id="system-connection-subtitle">CAMTI_設備單價查詢 • Google 試算表即時連線</p>
           </div>
         </div>
 
@@ -252,7 +252,7 @@
           </div>
 
           <!-- 重新整理按鈕 -->
-          <button class="btn btn-secondary" onclick="App.loadData()" title="重新從 Google Sheet 載入最新資料">
+          <button class="btn btn-secondary" onclick="App.loadData(true)" title="重新從 Google Sheet 載入最新資料 (強制略過快取)">
             🔄 同步
           </button>
         </div>

@@ -61,13 +61,13 @@ const App = {
   /**
    * 依據使用者權限載入 Google Sheet 資料
    */
-  async loadData() {
+  async loadData(forceRefresh = false) {
     this.state.isLoading = true;
     this.renderLoading(true);
 
     try {
       const currentRole = Auth.getRole();
-      const res = await API.getAllData(currentRole);
+      const res = await API.getAllData(currentRole, forceRefresh);
       if (res && res.success) {
         this.state.categories = res.categories || [];
         this.state.rawData = res.data || {};
@@ -80,13 +80,46 @@ const App = {
 
         const banner = document.getElementById('demo-mode-banner');
         if (banner) {
-          banner.style.display = res.isDemo ? 'flex' : 'none';
+          if (res.isDemo) {
+            banner.style.display = 'flex';
+            banner.innerHTML = `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">⚠️</span>
+                <span><strong>目前顯示為「本地示範資料」</strong>（共 ${all.length} 筆，非 Google Sheet 即時資料）。
+                ${res.fetchError ? `<br><small style="color: var(--accent-rose);">連線失敗原因：${res.fetchError} (若為本地 file:// 開啟請改用 VS Code Live Server 或 GitHub Pages)</small>` : ''}
+                </span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" onclick="App.loadData(true)">🔄 強制重試連線</button>
+              </div>
+            `;
+          } else {
+            banner.style.display = 'none';
+          }
         }
 
-        this.renderStats();
+        const subtitle = document.getElementById('system-connection-subtitle');
+        if (subtitle) {
+          if (res.isDemo) {
+            subtitle.innerHTML = `⚠️ <span style="color: var(--accent-amber);">本地離線模式</span> • 共 ${all.length} 筆示範項目`;
+          } else {
+            const sheetTitle = res.spreadsheetName ? `已連線【${res.spreadsheetName}】` : 'Google 試算表即時連線';
+            subtitle.innerHTML = `🟢 <span style="color: var(--accent-emerald);">${sheetTitle}</span> • 即時收錄 ${all.length} 筆設備`;
+          }
+        }
+
+        this.renderStats(res);
         this.renderCategoryTabs();
         this.populateBrandFilter();
         this.applyFiltersAndRender();
+
+        if (forceRefresh) {
+          if (res.isDemo) {
+            this.showToast('無法連線至 Google 試算表，已退回本地示範資料！', 'warning');
+          } else {
+            this.showToast(`✅ 已從 Google Sheet 即時同步 ${all.length} 筆設備！`, 'success');
+          }
+        }
       } else {
         this.showToast(res.message || '載入資料失敗', 'error');
       }
@@ -99,7 +132,7 @@ const App = {
     }
   },
 
-  renderStats() {
+  renderStats(res = {}) {
     const catCountEl = document.getElementById('stat-cat-count');
     const itemCountEl = document.getElementById('stat-item-count');
     const brandCountEl = document.getElementById('stat-brand-count');
@@ -113,7 +146,9 @@ const App = {
 
     if (syncTimeEl) {
       const now = new Date();
-      syncTimeEl.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const pad = n => String(n).padStart(2, '0');
+      syncTimeEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      syncTimeEl.title = res && res.isDemo ? '本地示範資料載入時間' : 'Google Sheet 即時連線同步時間';
     }
   },
 

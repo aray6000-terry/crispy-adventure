@@ -122,7 +122,8 @@ const API = {
 
     return {
       success: true,
-      message: '登入成功',
+      message: '登入成功 (本地離線模擬模式)',
+      isDemo: true,
       user: {
         username: user.username,
         name: user.name,
@@ -188,21 +189,32 @@ const API = {
   /**
    * 依據使用者角色取得設備資料 (業務隱藏進價、採購隱藏售價、管理者看雙價)
    */
-  async getAllData(userRole = 'sales') {
+  async getAllData(userRole = 'sales', forceRefresh = false) {
+    let fetchError = null;
+
     if (this.isConfigured()) {
       try {
-        const response = await fetch(`${CONFIG.GAS_API_URL}?action=getAllData&role=${encodeURIComponent(userRole)}`);
+        const cacheBuster = `&_t=${Date.now()}`;
+        const url = `${CONFIG.GAS_API_URL}?action=getAllData&role=${encodeURIComponent(userRole)}${cacheBuster}`;
+        const response = await fetch(url, {
+          method: 'GET',
+          cache: forceRefresh ? 'no-store' : 'default'
+        });
         const result = await response.json();
         if (result && result.success) {
+          result.isDemo = false;
           return result;
+        } else if (result && result.error) {
+          fetchError = result.error;
         }
       } catch (err) {
         console.warn('無法從 Google Sheet 取得資料，切換為本地展示資料:', err);
+        fetchError = err.message || String(err);
       }
     }
 
-    // 本地模擬過濾
-    await new Promise(r => setTimeout(r, 300));
+    // 本地模擬過濾 (當離線或 GAS 連線失敗時)
+    await new Promise(r => setTimeout(r, 200));
     const db = this.getLocalDb();
     const processedData = {};
     let total = 0;
@@ -244,7 +256,9 @@ const API = {
 
     return {
       success: true,
-      isDemo: !this.isConfigured(),
+      isDemo: true, // 明確標記為本地示範資料
+      isFallback: Boolean(fetchError),
+      fetchError: fetchError,
       userRole: userRole,
       categories: Object.keys(processedData),
       totalItems: total,

@@ -225,6 +225,7 @@ function doGet(e) {
     if (action === 'getAllData') {
       const sheets = ss.getSheets();
       const result = {};
+      const headersMap = {};
       let totalItemCount = 0;
 
       sheets.forEach(sheet => {
@@ -234,12 +235,14 @@ function doGet(e) {
         const data = sheet.getDataRange().getValues();
         if (data.length <= 1) {
           result[name] = [];
+          headersMap[name] = data.length === 1 ? data[0] : [];
           return;
         }
 
         // 第 1 列為標題，進行動態智能欄位配對
         const headers = data[0];
         const colMap = getHeaderMapping(headers);
+        headersMap[name] = { headers: headers, mappedCols: colMap };
 
         const items = [];
         for (let i = 1; i < data.length; i++) {
@@ -289,7 +292,11 @@ function doGet(e) {
       return createJsonResponse({
         success: true,
         userRole: userRole,
+        spreadsheetName: ss.getName(),
+        spreadsheetUrl: ss.getUrl(),
+        spreadsheetId: ss.getId(),
         categories: Object.keys(result),
+        headers: headersMap,
         totalItems: totalItemCount,
         data: result,
         timestamp: new Date().toISOString()
@@ -551,12 +558,19 @@ function getHeaderMapping(headers) {
     catalog: -1
   };
 
+  let explicitNameFound = false;
+
   headers.forEach((h, idx) => {
     const title = String(h || '').trim().toLowerCase();
     if (!title) return;
 
-    // 1. 業務成本 / 業務價 / 報價 / 售價 / 建議售價 (若包含「業務」優先判定為業務成本)
-    if (title.includes('業務') || title.includes('報價') || title.includes('售價') || title.includes('定價') || title.includes('牌價') || title.includes('建議') || title.includes('sales') || title.includes('quote') || title.includes('sell')) {
+    // 0. 排除「項次」、「序號」、「編號」被誤判為品名
+    if (title === '項次' || title === '序號' || title === '編號' || title === 'no' || title === 'no.' || title === '#') {
+      return;
+    }
+
+    // 1. 業務成本 / 業務價 / 報價 / 售價 / 建議售價 / 牌價 / 定價 / 零售價
+    if (title.includes('業務') || title.includes('報價') || title.includes('售價') || title.includes('定價') || title.includes('牌價') || title.includes('建議') || title.includes('sales') || title.includes('quote') || title.includes('sell') || title.includes('零售')) {
       map.salesPrice = idx;
     }
     // 2. 採購成本 / 採購價 / 進價 / 進貨 / 底價 / 成本
@@ -564,30 +578,41 @@ function getHeaderMapping(headers) {
       map.costPrice = idx;
     }
     // 3. 通用單一金額欄位 (備援)
-    else if (title.includes('金額') || title.includes('單價') || title.includes('price')) {
+    else if (title.includes('金額') || title.includes('單價') || title.includes('價格') || title.includes('費用') || title.includes('price')) {
       map.generalPrice = idx;
     }
-    // 4. 項目名稱 / 品名
-    else if (title.includes('項目') || title.includes('品名') || title.includes('設備') || title.includes('名稱') || title.includes('item') || title.includes('name')) {
+    // 4. 項目名稱 / 品名 / 設備名稱 / 產品名稱
+    else if (title.includes('項目') || title.includes('品名') || title.includes('設備') || title.includes('名稱') || title.includes('產品') || title.includes('item') || title.includes('name') || title.includes('desc')) {
       map.name = idx;
+      explicitNameFound = true;
     }
-    // 5. 廠牌 / 品牌
-    else if (title.includes('廠牌') || title.includes('品牌') || title.includes('brand') || title.includes('make')) {
+    // 5. 廠牌 / 品牌 / 製造商 / 原廠
+    else if (title.includes('廠牌') || title.includes('品牌') || title.includes('製造') || title.includes('原廠') || title.includes('brand') || title.includes('make') || title.includes('vendor') || title.includes('manufacturer')) {
       map.brand = idx;
     }
     // 6. 型號 / 規格
-    else if (title.includes('型號') || title.includes('規格') || title.includes('model') || title.includes('spec')) {
+    else if (title.includes('型號') || title.includes('規格') || title.includes('model') || title.includes('spec') || title.includes('type')) {
       map.model = idx;
     }
     // 7. 備註 / 說明
-    else if (title.includes('備註') || title.includes('說明') || title.includes('note') || title.includes('remark')) {
+    else if (title.includes('備註') || title.includes('說明') || title.includes('note') || title.includes('remark') || title.includes('comment')) {
       map.note = idx;
     }
-    // 8. 型錄 / 檔案連結
-    else if (title.includes('型錄') || title.includes('連結') || title.includes('下載') || title.includes('catalog') || title.includes('link') || title.includes('url')) {
+    // 8. 型錄 / 檔案連結 / 下載 / 網址
+    else if (title.includes('型錄') || title.includes('連結') || title.includes('下載') || title.includes('檔案') || title.includes('網址') || title.includes('catalog') || title.includes('link') || title.includes('url') || title.includes('datasheet')) {
       map.catalog = idx;
     }
   });
+
+  // 若第一欄是項次/編號，且沒明確找到品名欄位，但第二欄存在
+  if (!explicitNameFound && headers.length > 1) {
+    const firstCol = String(headers[0] || '').trim().toLowerCase();
+    if (firstCol.includes('項次') || firstCol.includes('編號') || firstCol === 'no') {
+      map.name = 1;
+      if (map.brand === 1) map.brand = 2;
+      if (map.model === 2) map.model = 3;
+    }
+  }
 
   // 若未明確找到特定欄位，進行智慧推斷與備援
   if (map.costPrice === -1 && map.salesPrice === -1) {
@@ -611,12 +636,16 @@ function getHeaderMapping(headers) {
 }
 
 /**
- * 數值清洗函式：自動去除貨幣符號、千分位逗號、字串空白，精準轉為浮點數
+ * 數值清洗函式：自動去除貨幣符號、千分位逗號、字串空白，支援括號負數，精準轉為浮點數
  */
 function parseNumber(val) {
   if (typeof val === 'number') return isNaN(val) ? 0 : val;
   if (!val) return 0;
-  const cleaned = String(val).replace(/[^0-9.-]/g, '');
+  let str = String(val).trim();
+  if (str.startsWith('(') && str.endsWith(')')) {
+    str = '-' + str.substring(1, str.length - 1);
+  }
+  const cleaned = str.replace(/[^0-9.-]/g, '');
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
 }
