@@ -28,7 +28,7 @@ const App = {
       this.renderAuthView();
     } else {
       this.renderMainView();
-      await this.loadData();
+      await this.loadData(true);
     }
 
     this.bindEvents();

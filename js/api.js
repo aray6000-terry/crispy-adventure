@@ -74,7 +74,14 @@ const API = {
             userAgent: navigator.userAgent
           })
         });
-        const result = await response.json();
+        const text = await response.text();
+        let result = null;
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          console.warn('GAS login 回傳非 JSON:', text.substring(0, 100));
+        }
+
         if (result) {
           if (!result.message && result.error) {
             result.message = result.error;
@@ -193,14 +200,24 @@ const API = {
     let fetchError = null;
 
     if (this.isConfigured()) {
-      try {
         const cacheBuster = `&_t=${Date.now()}`;
         const url = `${CONFIG.GAS_API_URL}?action=getAllData&role=${encodeURIComponent(userRole)}${cacheBuster}`;
         const response = await fetch(url, {
           method: 'GET',
-          cache: forceRefresh ? 'no-store' : 'default'
+          cache: 'no-store',
+          redirect: 'follow'
         });
-        const result = await response.json();
+        const text = await response.text();
+        let result = null;
+        try {
+          result = JSON.parse(text);
+        } catch (parseErr) {
+          if (text.trim().startsWith('<')) {
+            throw new Error('Google Apps Script 正在部署或伺服器短暫回應 HTML，請點擊右側「🔄 強制重試連線」。');
+          }
+          throw parseErr;
+        }
+
         if (result && result.success) {
           result.isDemo = false;
           return result;
