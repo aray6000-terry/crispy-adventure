@@ -200,6 +200,7 @@ const API = {
     let fetchError = null;
 
     if (this.isConfigured()) {
+      try {
         const cacheBuster = `&_t=${Date.now()}`;
         const url = `${CONFIG.GAS_API_URL}?action=getAllData&role=${encodeURIComponent(userRole)}${cacheBuster}`;
         const response = await fetch(url, {
